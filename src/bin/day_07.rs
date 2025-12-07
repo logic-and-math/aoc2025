@@ -45,13 +45,7 @@ fn solve(
         return res;
     }
 
-    let mut res = 0;
-    if j > 0 {
-        res += solve(i + 1, j - 1, grid, res_at_split);
-    }
-    if j < (grid[i as usize].len() - 1) as i64 {
-        res += solve(i + 1, j + 1, grid, res_at_split);
-    }
+    let res = solve(i + 1, j - 1, grid, res_at_split) + solve(i + 1, j + 1, grid, res_at_split);
 
     res_at_split.insert((i as usize, j as usize), res);
 
