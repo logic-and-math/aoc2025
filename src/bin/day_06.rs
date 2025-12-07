@@ -1,11 +1,10 @@
-use core::{num, str};
 use std::{
-    fs::{read, File},
+    fs::File,
     io::{BufRead, BufReader},
 };
 
 fn main() {
-    let file = File::open("inputs//day_06_input").unwrap();
+    let file = File::open("inputs/day_06_input").unwrap();
     let reader = BufReader::new(file);
 
     let mut numbers_per_equation: Vec<Vec<i64>> = vec![vec![]];

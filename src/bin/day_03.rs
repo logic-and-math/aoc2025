@@ -4,7 +4,7 @@ use std::{
 };
 
 fn main() {
-    let file = File::open("inputs//day_03_input").unwrap();
+    let file = File::open("inputs/day_03_input").unwrap();
     let reader = BufReader::new(file);
 
     let res: u64 = reader

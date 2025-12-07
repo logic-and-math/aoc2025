@@ -4,7 +4,7 @@ use std::{
 };
 
 fn main() {
-    let file = File::open("inputs//day_02_input").unwrap();
+    let file = File::open("inputs/day_02_input").unwrap();
     let mut reader = BufReader::new(file);
     let mut line = String::new();
     reader.read_line(&mut line).unwrap();

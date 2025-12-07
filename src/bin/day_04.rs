@@ -4,7 +4,7 @@ use std::{
 };
 
 fn main() {
-    let file = File::open("inputs//day_04_input").unwrap();
+    let file = File::open("inputs/day_04_input").unwrap();
     let reader = BufReader::new(file);
 
     let mut matrix: Vec<Vec<char>> = vec![];

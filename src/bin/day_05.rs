@@ -4,7 +4,7 @@ use std::{
 };
 
 fn main() {
-    let file = File::open("inputs//day_05_input").unwrap();
+    let file = File::open("inputs/day_05_input").unwrap();
     let reader = BufReader::new(file);
 
     let mut fresh_ranges: Vec<(i64, i64)> = vec![];
