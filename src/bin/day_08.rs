@@ -12,9 +12,9 @@ struct Pos {
 }
 
 impl Pos {
-    fn distance(&self, other: Pos) -> f64 {
+    fn distance(&self, other: &Pos) -> f64 {
         let v = (self.x - other.x).pow(2) + (self.y - other.y).pow(2) + (self.z - other.z).pow(2);
-        (v as f64).sqrt()
+        v as f64
     }
 }
 
@@ -38,18 +38,13 @@ fn main() {
         })
         .collect::<Vec<Pos>>();
 
-    let mut distances: HashMap<(&Pos, &Pos), f64> = HashMap::new();
+    let n = positions.len();
+    let capacity = n * (n - 1) / 2;
+    let mut distances: HashMap<(&Pos, &Pos), f64> = HashMap::with_capacity(capacity);
     for (i, pos1) in positions.iter().enumerate() {
-        for (j, pos2) in positions.iter().enumerate() {
-            if i == j {
-                continue;
-            }
-
-            if distances.contains_key(&(pos1, pos2)) || distances.contains_key(&(pos2, pos1)) {
-                continue;
-            }
-
-            distances.insert((pos1, pos2), pos1.distance(pos2.clone()));
+        for j in i + 1..positions.len() {
+            let pos2 = &positions[j];
+            distances.insert((pos1, pos2), pos1.distance(pos2));
         }
     }
 
