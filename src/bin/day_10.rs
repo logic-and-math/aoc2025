@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs::File,
     io::{BufRead, BufReader},
 };
@@ -76,153 +76,36 @@ fn main() {
         }
     }
 
-    println!("{}\n\n", total);
-
-    let mut total = 0;
+    total = 0;
     for machine_index in 0..buttons_per_machine.len() {
         let buttons = &buttons_per_machine[machine_index];
         let expected_joltages = &expected_joltages_per_machine[machine_index];
-        let mut button_indexes_per_joltage: Vec<Vec<usize>> = vec![];
 
-        let mut combinations_per_joltage: Vec<Vec<Vec<usize>>> = vec![];
+        let mut n_presses_per_index: Vec<usize> = vec![0; buttons.len()];
+        let mut indicators_to_presses: HashMap<Vec<bool>, Vec<Vec<usize>>> = HashMap::new();
 
-        for (joltage_index, expected_joltage) in expected_joltages.iter().enumerate() {
-            let button_indexes_for_joltage = buttons
-                .iter()
-                .enumerate()
-                .filter(|(_, b)| b.contains(&joltage_index))
-                .map(|(i, _)| i)
-                .collect::<Vec<usize>>();
+        fill_indicators_to_presses(
+            0,
+            buttons,
+            &mut n_presses_per_index,
+            &mut indicators_to_presses,
+            expected_joltages.len(),
+        );
 
-            button_indexes_per_joltage.push(button_indexes_for_joltage.clone());
+        let mut cache: HashMap<Vec<usize>, Option<i64>> = HashMap::new();
 
-            let mut all_combinations: Vec<Vec<usize>> = vec![];
-            let mut current_combination: Vec<usize> = vec![0; buttons.len()];
-            find_combinations(
-                *expected_joltage,
-                0,
-                &button_indexes_for_joltage,
-                &mut current_combination,
-                &mut all_combinations,
-            );
-            println!("{:?}", all_combinations.len());
-            combinations_per_joltage.push(all_combinations);
-        }
+        let res = find_min_presses(
+            expected_joltages,
+            buttons,
+            &indicators_to_presses,
+            &mut cache,
+        )
+        .unwrap();
 
-        println!("#####################");
-
-        let mut combination_indexes_to_keep_per_joltage: Vec<HashSet<usize>> =
-            vec![HashSet::new(); expected_joltages.len()];
-
-        for (joltage_index, combinations) in combinations_per_joltage.iter().enumerate() {
-            for (combination_index, combination) in combinations.iter().enumerate() {
-                let mut valid = true;
-                for (j_i, button_indexes) in button_indexes_per_joltage.iter().enumerate() {
-                    let mut joltage_count = 0;
-
-                    for (button_index, value) in combination.iter().enumerate() {
-                        if button_indexes.contains(&button_index) {
-                            joltage_count += value;
-                        }
-                    }
-
-                    if joltage_count > expected_joltages[j_i] {
-                        valid = false;
-                        break;
-                    }
-                }
-
-                if valid {
-                    combination_indexes_to_keep_per_joltage[joltage_index]
-                        .insert(combination_index);
-                }
-            }
-
-            println!(
-                "{:?}",
-                combination_indexes_to_keep_per_joltage[joltage_index].len()
-            );
-        }
-
-        for joltage_index in 0..combinations_per_joltage.len() {
-            let indexes_to_keep = &combination_indexes_to_keep_per_joltage[joltage_index];
-            let mut idx = 0;
-            combinations_per_joltage[joltage_index].retain(|_| {
-                let keep = indexes_to_keep.contains(&idx);
-                idx += 1;
-                keep
-            });
-
-            // combinations_per_joltage[joltage_index] = combinations_per_joltage[joltage_index]
-            //     .iter()
-            //     .enumerate()
-            //     .filter(|(i, v)| indexes_to_keep.contains(i))
-            //     .map(|(i, v)| v)
-            //     .collect::<Vec<Vec<usize>>>();
-        }
-
-        return;
-        let mut tot = 0;
-        let mut n_valid = 0;
-        for joltage_i in 0..expected_joltages.len() {
-            for joltage_j in (joltage_i + 1)..expected_joltages.len() {
-                // rust shanenings
-                let (left, right) = combinations_per_joltage.split_at_mut(joltage_j);
-                let combinations_i = &mut left[joltage_i];
-                let combinations_j = &mut right[0];
-
-                let mut valid_combinations_i: HashSet<Vec<usize>> = HashSet::new();
-                let mut valid_combinations_j: HashSet<Vec<usize>> = HashSet::new();
-
-                for combination_i in combinations_i.iter_mut() {
-                    for combination_j in combinations_j.iter_mut() {
-                        let mut valid = true;
-                        // two combinations are invalid if any button in one combination that affects the other joltage is > the value of the same button in the other combination
-                        for (button_index, value_i) in combination_i.iter().enumerate() {
-                            if button_indexes_per_joltage[joltage_j].contains(&button_index) {
-                                if *value_i > combination_j[button_index] {
-                                    valid = false;
-                                    tot += 1;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if valid {
-                            // valid_combinations_i.insert(combination_i.clone());
-                            // valid_combinations_j.insert(combination_j.clone());
-                            n_valid += 1;
-                        }
-                    }
-                }
-                println!(
-                    "invalid: {}, valid: {}, valid_i: {}, valid_j: {}",
-                    tot,
-                    n_valid,
-                    valid_combinations_i.len(),
-                    valid_combinations_j.len(),
-                );
-
-                // return;
-            }
-        }
-
-        // loop {
-        //     println!("{}", i);
-
-        //     let mut joltages: Vec<usize> = vec![0; expected_joltages.len()];
-
-        //     let res = solve_2(buttons, &mut joltages, i, expected_joltages);
-        //     if res {
-        //         total += i;
-        //         break;
-        //     }
-
-        //     i += 1;
-        // }
+        total += res as usize;
     }
 
-    // println!("{}", total);
+    println!("{}", total);
 }
 
 fn solve_1(
@@ -256,71 +139,113 @@ fn solve_1(
     false
 }
 
-fn find_combinations(
-    left: usize,
-    current_index_index: usize, // xD
-    indexes: &Vec<usize>,
-    current_combination: &mut Vec<usize>,
-    all_combinations: &mut Vec<Vec<usize>>,
+fn fill_indicators_to_presses(
+    current_index: usize,
+    buttons: &Vec<Vec<usize>>,
+    n_presses_per_index: &mut Vec<usize>,
+    indicators_to_presses: &mut HashMap<Vec<bool>, Vec<Vec<usize>>>,
+    n_lights: usize,
 ) {
-    if current_index_index >= indexes.len() {
-        all_combinations.push(current_combination.clone());
+    if current_index >= buttons.len() {
+        let mut indicator: Vec<bool> = vec![false; n_lights];
+
+        for (button_index, n_presses) in n_presses_per_index.iter().enumerate() {
+            let button = &buttons[button_index];
+            if *n_presses == 1 {
+                for light_index in button {
+                    indicator[*light_index] = !indicator[*light_index]
+                }
+            }
+        }
+
+        if !indicators_to_presses.contains_key(&indicator) {
+            indicators_to_presses.insert(indicator.clone(), vec![]);
+        }
+
+        indicators_to_presses
+            .get_mut(&indicator)
+            .unwrap()
+            .push(n_presses_per_index.clone());
+
         return;
     }
 
-    let current_index = indexes[current_index_index];
-
-    for i in 0..=left {
-        current_combination[current_index] = i;
-        find_combinations(
-            left - i,
-            current_index_index + 1,
-            indexes,
-            current_combination,
-            all_combinations,
+    // each button can be pressed only 0 or 1 time for the indicator state
+    for n_presses in 0..=1 {
+        n_presses_per_index[current_index] = n_presses;
+        fill_indicators_to_presses(
+            current_index + 1,
+            buttons,
+            n_presses_per_index,
+            indicators_to_presses,
+            n_lights,
         );
     }
 }
 
-fn solve_2(
+fn find_min_presses(
+    joltages: &Vec<usize>,
     buttons: &Vec<Vec<usize>>,
-    joltages: &mut Vec<usize>,
-    moves_left: usize,
-    expected_joltages: &Vec<usize>,
-) -> bool {
-    if moves_left == 0 {
-        return joltages == expected_joltages;
+    indicators_to_presses: &HashMap<Vec<bool>, Vec<Vec<usize>>>,
+    cache: &mut HashMap<Vec<usize>, Option<i64>>,
+) -> Option<i64> {
+    if joltages.iter().all(|v| *v == 0) {
+        return Some(0);
     }
 
-    for button in buttons {
-        for index in button {
-            let index = *index as usize;
-            joltages[index] += 1;
-        }
+    let indicator: Vec<bool> = joltages.iter().map(|j| j % 2 == 1).collect();
 
-        for index in 0..joltages.len() {
-            if joltages[index] > expected_joltages[index] {
-                //revert
-                for index in button {
-                    let index = *index as usize;
-                    joltages[index] -= 1;
+    let mut res: Option<i64> = None;
+
+    if !indicators_to_presses.contains_key(&indicator) {
+        return None;
+    }
+
+    for presses in &indicators_to_presses[&indicator] {
+        let mut new_joltages = joltages.clone();
+
+        let mut ok = true;
+
+        'buttons: for (button_index, n_presses) in presses.iter().enumerate() {
+            if *n_presses == 0 {
+                continue;
+            }
+
+            for &joltage_index in &buttons[button_index] {
+                if new_joltages[joltage_index] == 0 {
+                    ok = false;
+                    break 'buttons;
                 }
-
-                return false;
+                new_joltages[joltage_index] -= 1;
             }
         }
 
-        let res = solve_2(buttons, joltages, moves_left - 1, expected_joltages);
-
-        if res {
-            return true;
+        if !ok {
+            continue;
         }
 
-        for index in button {
-            let index = *index as usize;
-            joltages[index] -= 1;
+        new_joltages = new_joltages.iter().map(|v| v / 2).collect();
+
+        let min_presses_for_new_joltages = if cache.contains_key(&new_joltages) {
+            cache[&new_joltages]
+        } else {
+            let v = find_min_presses(&new_joltages, buttons, indicators_to_presses, cache);
+            cache.insert(new_joltages, v);
+            v
+        };
+
+        if min_presses_for_new_joltages == None {
+            continue;
         }
+
+        let num_presses = (presses.iter().filter(|&&x| x > 0).count() as i64)
+            + (2 * min_presses_for_new_joltages.unwrap());
+
+        res = match res {
+            None => Some(num_presses),
+            Some(r) => Some(num_presses.min(r)),
+        };
     }
 
-    false
+    return res;
 }
